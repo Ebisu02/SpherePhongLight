@@ -39,9 +39,10 @@ public class Renderer extends Activity {
     private class MyGLRenderer implements GLSurfaceView.Renderer {
         private Sphere sphere;
         private float[] mViewMatrix = new float[16];
-        private float[] mProjectionMatrix  = new float[16];
+        private float[] mProjectionMatrix = new float[16];
         private float[] mModelMatrix = new float[16];
         private float[] mMVPMatrix = new float[16];
+        private float[] lightDirection = {1.0f, 1.0f, 1.0f}; // Направление света
 
         @Override
         public void onSurfaceCreated(GL10 gl, EGLConfig eglConfig) {
@@ -55,21 +56,26 @@ public class Renderer extends Activity {
 
         @Override
         public void onDrawFrame(GL10 gl) {
-            // Clr screen and depth buffer
+            // Очистка экрана и буфера глубины
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-            // Set camera position
+
+            // Установка позиции камеры
             Matrix.setLookAtM(mViewMatrix, 0, 10, 0, -5, 0, 0, 0, 0, 1, 0);
-            // Set projection matrix
+
+            // Установка матрицы проекции
             float ratio = (float) glSurfaceView.getWidth() / (float) glSurfaceView.getHeight();
             Matrix.perspectiveM(mProjectionMatrix, 0, 45, ratio, 0.1f, 100f);
-            // Calculate MVP matrix
+
+            // Вычисление MVP-матрицы
             Matrix.setIdentityM(mModelMatrix, 0);
             Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
             Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
-            // Draw sphere
-            float[] diffuseColor = {1.0f, 0.0f, 0.0f, 1.0f};
-            float[] ambientColor = {0.1f, 0.1f, 0.1f, 1.0f};
-            sphere.draw(mMVPMatrix, diffuseColor, ambientColor);
+
+            // Настройка параметров освещения и рисование сферы
+            float[] diffuseColor = {1.0f, 0.0f, 0.0f, 1.0f}; // Цвет диффузного освещения
+            float shininess = 500.0f; // Фактор блеска
+            sphere.draw(mMVPMatrix, diffuseColor, shininess, lightDirection);
         }
     }
+
 }
