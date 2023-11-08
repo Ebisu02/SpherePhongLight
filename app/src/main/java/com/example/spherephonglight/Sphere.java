@@ -5,6 +5,7 @@ import android.opengl.GLES20;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.ShortBuffer;
 import java.util.ArrayList;
 
 public class Sphere {
@@ -25,6 +26,9 @@ public class Sphere {
 
     private float[] sphereVertices;
 
+    private short[] indices;
+    private ShortBuffer indexBuffer;
+    private int ambientColorHandle;
     private final String vertexShaderCode = "" +
             "uniform mat4 uMVPMatrix;" +
             "attribute vec4 vPosition;" +
@@ -37,15 +41,36 @@ public class Sphere {
     private final String fragmentShaderCode = "" +
             "precision mediump float;" +
             "uniform vec4 vColor;" +
+            "uniform vec4 vAmbientColor;" +
             "varying vec3 fragmentNormal;" +
             "void main() {" +
             "   vec3 lightDirection = normalize(vec3(1.0, 1.0, 1.0));" +
             "   float diffuse = max(dot(fragmentNormal, lightDirection), 0.1);" +
             "   vec4 diffuseColor = vColor * diffuse;" +
-            "   gl_FragColor = diffuseColor;" +
+            "   vec4 ambientColor = vAmbientColor;" +
+            "   gl_FragColor = diffuseColor + ambientColor;" +
             "}";
 
     public Sphere() {
+        ambientColorHandle = GLES20.glGetUniformLocation(program, "vAmbientColor");
+        ArrayList<Short> indexList = new ArrayList<Short>();
+        for (int stackNum = 0; stackNum < stacks; stackNum++) {
+            for (int sliceNum = 0; sliceNum < slices; sliceNum++) {
+                short vertexIndex = (short) (stackNum * (slices + 1) + sliceNum);
+                indexList.add(vertexIndex);
+                indexList.add((short) (vertexIndex + slices + 1));
+            }
+        }
+        indices = new short[indexList.size()];
+        for (int i = 0; i < indexList.size(); ++i) {
+            indices[i] = indexList.get(i);
+        }
+        ByteBuffer bbd = ByteBuffer.allocateDirect(indices.length * 2);
+        bbd.order(ByteOrder.nativeOrder());
+        indexBuffer = bbd.asShortBuffer();
+        indexBuffer.put(indices);
+        indexBuffer.position(0);
+
         // Init sphere vertices and normals
         ArrayList<Float> vertices = new ArrayList<>();
         for (int stackNum = 0; stackNum <= stacks; stackNum++) {
@@ -106,10 +131,8 @@ public class Sphere {
         }
     }
 
-    public void draw(float[] mMVPMatrix) {
+    public void draw(float[] mMVPMatrix, float[] color, float[] ambientColor) {
         GLES20.glUseProgram(program);
-
-        float[] dimcyan = {0.0f, 0.5f, 0.5f, 1.0f};
 
         positionHandle = GLES20.glGetAttribLocation(program, "vPosition");
         normalHandle = GLES20.glGetAttribLocation(program, "vNormal");
@@ -121,11 +144,13 @@ public class Sphere {
         GLES20.glVertexAttribPointer(normalHandle, NORMALS_PER_VERTEX, GLES20.GL_FLOAT, false, vertexStride, vertexBuffer);
         GLES20.glEnableVertexAttribArray(normalHandle);
 
-        GLES20.glUniform4fv(colorHandle, 1, dimcyan , 0);
+        GLES20.glUniform4fv(colorHandle, 1, color , 0);
+        GLES20.glUniform4fv(ambientColorHandle, 1, ambientColor, 0);
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mMVPMatrix, 0);
 
         // Draw the sphere
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, sphereVertices.length / (COORDS_PER_VERTEX + NORMALS_PER_VERTEX));
+        GLES20.glDrawElements(GLES20.GL_TRIANGLE_STRIP, indices.length, GLES20.GL_UNSIGNED_SHORT, indexBuffer);
+        //GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, sphereVertices.length / (COORDS_PER_VERTEX + NORMALS_PER_VERTEX));
 
         GLES20.glDisableVertexAttribArray(positionHandle);
         GLES20.glDisableVertexAttribArray(normalHandle);

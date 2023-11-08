@@ -1,7 +1,5 @@
 package com.example.spherephonglight;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.Activity;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -11,7 +9,7 @@ import android.os.Bundle;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class App extends Activity {
+public class Renderer extends Activity {
 
     private GLSurfaceView glSurfaceView;
     private MyGLRenderer myGlRenderer;
@@ -60,7 +58,7 @@ public class App extends Activity {
             // Clr screen and depth buffer
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
             // Set camera position
-            Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -5, 0, 0, 0, 0, 1, 0);
+            Matrix.setLookAtM(mViewMatrix, 0, 10, 0, -5, 0, 0, 0, 0, 1, 0);
             // Set projection matrix
             float ratio = (float) glSurfaceView.getWidth() / (float) glSurfaceView.getHeight();
             Matrix.perspectiveM(mProjectionMatrix, 0, 45, ratio, 0.1f, 100f);
@@ -69,8 +67,9 @@ public class App extends Activity {
             Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
             Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
             // Draw sphere
-            sphere.draw(mMVPMatrix);
+            float[] diffuseColor = {1.0f, 0.0f, 0.0f, 1.0f};
+            float[] ambientColor = {0.1f, 0.1f, 0.1f, 1.0f};
+            sphere.draw(mMVPMatrix, diffuseColor, ambientColor);
         }
     }
-
 }
